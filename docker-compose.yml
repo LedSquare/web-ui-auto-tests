@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   php:
     container_name: ${PROJECT}_php
@@ -10,11 +8,11 @@ services:
     depends_on:
       - db
     volumes:
-      - ./laravel:/site
+      - ./src:/site
     networks:
       - appnet
 
-  server:
+  nginx:
     container_name: ${PROJECT}_nginx
     image: ${PROJECT}_nginx:${TAG}
     build:
@@ -25,7 +23,7 @@ services:
     depends_on:
       - php
     volumes:
-      - './laravel:/site'
+      - './src:/site'
     networks:
       - appnet
 
@@ -40,7 +38,26 @@ services:
     container_name: ${PROJECT}_db
     hostname: db
     ports:
-    - 3333:5432
+    - 3334:5432
+    networks:
+      - appnet
+
+  redis:
+    build:
+      context: .
+      dockerfile: docker/prod/redis/Dockerfile
+    container_name: ${PROJECT}_redis
+    image: ${PROJECT}_redis:${TAG}
+    hostname: redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./data/prod/redis:/root/redis
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PORT=6379
+#      - REDIS_DATABASES=16
     networks:
       - appnet
 
@@ -48,7 +65,7 @@ services:
     image: adminer
     restart: unless-stopped
     ports:
-      - "8888:8080"
+      - "8887:8080"
     container_name: ${PROJECT}_adminer
     hostname: adminer
     networks:

@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   php:
     container_name: ${PROJECT}_php
@@ -14,22 +12,7 @@ services:
     networks:
       - appnet
 
-  vite:
-    container_name: ${PROJECT}_vite
-    image: ${PROJECT}_vite:${TAG}
-    build:
-      context: .
-      dockerfile: docker/prod/vite/Dockerfile.vite
-    ports:
-      - 3000:3000
-      - 3001:3001
-    volumes:
-      - ./laravel/:/app
-      - /app/node_modules
-    networks:
-      - appnet
-
-  server:
+  nginx:
     container_name: ${PROJECT}_nginx
     image: ${PROJECT}_nginx:${TAG}
     build:
