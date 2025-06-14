@@ -1,0 +1,97 @@
+version: '3'
+
+services:
+  php:
+    container_name: ${PROJECT}_php
+    image: ${PROJECT}_php:${TAG}
+    build:
+      context: .
+      dockerfile: docker/prod/php/Dockerfile
+    depends_on:
+      - db
+    volumes:
+      - ./laravel:/site
+    networks:
+      - appnet
+
+  vite:
+    container_name: ${PROJECT}_vite
+    image: ${PROJECT}_vite:${TAG}
+    build:
+      context: .
+      dockerfile: docker/prod/vite/Dockerfile.vite
+    ports:
+      - 3000:3000
+      - 3001:3001
+    volumes:
+      - ./laravel/:/app
+      - /app/node_modules
+    networks:
+      - appnet
+
+  server:
+    container_name: ${PROJECT}_nginx
+    image: ${PROJECT}_nginx:${TAG}
+    build:
+      context: .
+      dockerfile: docker/prod/nginx/Dockerfile
+    ports:
+      - 80:80
+    depends_on:
+      - php
+    volumes:
+      - './laravel:/site'
+    networks:
+      - appnet
+
+  db:
+    image: postgres:15-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    volumes:
+      - ./data/prod/db:/var/lib/postgresql/data:rw
+    container_name: ${PROJECT}_db
+    hostname: db
+    networks:
+      - appnet
+
+
+  redis:
+    build:
+      context: .
+      dockerfile: docker/prod/redis/Dockerfile
+    container_name: ${PROJECT}_redis
+    image: ${PROJECT}_redis:${TAG}
+    hostname: redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./data/prod/redis:/root/redis
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_PORT=6379
+#      - REDIS_DATABASES=16
+    networks:
+      - appnet
+
+  # adminer:
+  #   image: adminer
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8888:8080"
+  #   container_name: ${PROJECT}_adminer
+  #   hostname: adminer
+  #   networks:
+  #     - appnet
+      
+#------------
+
+networks:
+  appnet:
+    name: prod-net
+    driver: bridge
+    external: true
+      

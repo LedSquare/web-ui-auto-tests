@@ -1,0 +1,64 @@
+version: '3'
+
+services:
+  php:
+    container_name: ${PROJECT}_php
+    image: ${PROJECT}_php:${TAG}
+    build:
+      context: .
+      dockerfile: docker/dev/php/Dockerfile
+    depends_on:
+      - db
+    volumes:
+      - ./laravel:/site
+    networks:
+      - appnet
+
+  server:
+    container_name: ${PROJECT}_nginx
+    image: ${PROJECT}_nginx:${TAG}
+    build:
+      context: .
+      dockerfile: docker/dev/nginx/Dockerfile
+    ports:
+      - 94:80
+    depends_on:
+      - php
+    volumes:
+      - './laravel:/site'
+    networks:
+      - appnet
+
+  db:
+    image: postgres:15-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    volumes:
+      - ./data/dev/db:/var/lib/postgresql/data:rw
+    container_name: ${PROJECT}_db
+    hostname: db
+    ports:
+    - 3333:5432
+    networks:
+      - appnet
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - "8888:8080"
+    container_name: ${PROJECT}_adminer
+    hostname: adminer
+    networks:
+      - appnet
+      
+#------------
+
+networks:
+  appnet:
+    name: aspnet
+    driver: bridge
+    external: true
+      
